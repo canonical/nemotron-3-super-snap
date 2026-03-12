@@ -22,10 +22,10 @@ layout:
   /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl:
     bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl
 
-plugs:
+# plugs:
   # To allow side-loading models into server (root daemon) from user home directory
-  home:
-    read: all
+  # home:
+  #   read: all
 
 hooks:
   install:
