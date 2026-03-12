@@ -1,0 +1,11 @@
+# Snap artifacts
+partitions/
+parts/
+stage/
+prime/
+*.snap
+*.comp
+squashfs-root
+
+# Model files
+*.gguf
