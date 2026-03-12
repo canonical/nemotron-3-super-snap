@@ -1,0 +1,236 @@
+name: nemotron-3-super
+base: core24
+summary: Inference Snap for Nemotron 3 super
+description: |
+  This is an inference snap that lets you run Nemotron 3 super.
+
+adopt-info: version
+
+grade: stable
+confinement: strict
+compression: lzo
+
+environment:
+  SNAP_COMPONENTS: /snap/$SNAP_INSTANCE_NAME/components/$SNAP_REVISION
+  ARCH_TRIPLET: $CRAFT_ARCH_TRIPLET_BUILD_FOR
+  OCL_ICD_VENDORS: $SNAP/etc/OpenCL/vendors
+
+layout:
+  # OpenCL looks in /etc/OpenCL/vendors for .icd files containing the paths to shared objects
+  /etc/OpenCL/vendors:
+    bind: $SNAP/etc/OpenCL/vendors
+  # Intel icd files use an absolute path to Intel OpenCL shared objects. Use a layout to mount the so files at the expected location
+  /usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl:
+    bind: $SNAP/usr/lib/$CRAFT_ARCH_TRIPLET_BUILD_FOR/intel-opencl
+
+plugs:
+  # To allow side-loading models into server (root daemon) from user home directory
+  home:
+    read: all
+
+hooks:
+  install:
+    plugs:
+      - hardware-observe
+      - opengl
+
+parts:
+  version:
+    plugin: dump
+    source: .
+    build-packages:
+      - git-lfs
+    override-pull: |
+      craftctl set version="v3+$(git -C $SNAPCRAFT_PROJECT_DIR describe --always)"
+
+  cli:
+    source:
+      - on amd64: https://github.com/canonical/inference-snaps-cli/releases/download/v1.0.0-beta.34/inference-snaps-cli-linux-amd64.tar.xz
+      - on arm64: https://github.com/canonical/inference-snaps-cli/releases/download/v1.0.0-beta.34/inference-snaps-cli-linux-arm64.tar.xz
+    plugin: dump
+    override-build: |
+      mkdir -p bin
+      mv cli bin/modelctl
+
+      # For tab completion
+      ln --symbolic ./modelctl bin/nemotron-3-super
+
+      craftctl default
+    stage-packages:
+      - pciutils # lspci
+      - nvidia-utils-580 # nvidia-smi, used for NVIDIA vRAM and CUDA Capability detection
+
+  engines:
+    source: engines
+    plugin: dump
+    organize:
+      "*": engines/
+  
+  scripts:
+    source: scripts
+    plugin: dump
+    stage-packages:
+      - jq
+    organize:
+      "server.sh": bin/
+      "completion.bash": bin/
+
+  model-120b-a12b-q4-k-m-gguf:
+    plugin: nil
+    override-prime: |
+      set +x # reduce noise
+
+      # Bypassing the usual part lifecycle saves disk space and time when dealing with large files
+      # Copy model files directly from the project into the respective component's prime directory
+      for i in {1..20}; do
+        ii=$(printf "%02d" $i)
+        source="$CRAFT_PROJECT_DIR/components/model-120b-a12b-q4-k-m-gguf/NVIDIA-Nemotron-3-Super-120B-A12B-UD-Q4_K_M-5G-000${ii}-of-00020.gguf"
+        target="CRAFT_COMPONENT_MODEL_120B_A12B_Q4_K_M_GGUF_${ii}_OF_20_PRIME"
+
+        cp -v "$source" "${!target}/"
+
+        if [ "$i" -eq 1 ]; then
+          # Copy any other non-gguf files from the components directory
+          for f in "$CRAFT_PROJECT_DIR/components/model-120b-a12b-q4-k-m-gguf"/*; do
+            if [ -f "$f" ]; then
+              case "$f" in
+                *.gguf) ;;
+                *) cp -v "$f" "${!target}/" ;;
+              esac
+            fi
+          done
+        else
+          # Each component must include a component.yaml config file.
+          # For components other than the first, create an empty one:
+          echo "# No config" > "${!target}/component.yaml"
+        fi
+      done
+
+  llama-cpp:
+    plugin: dump
+    source: 
+      - on amd64: https://github.com/jpm-canonical/llama.cpp-builds/releases/download/b8287/llamacpp-amd64.tar.gz
+      - on arm64: https://github.com/jpm-canonical/llama.cpp-builds/releases/download/b8287/llamacpp-arm64.tar.gz
+    override-build: |
+      # Move license files to be included in the snap, not the component
+      mkdir -p $CRAFT_PRIME/usr/share/doc/
+      mv licenses $CRAFT_PRIME/usr/share/doc/llama.cpp
+
+      craftctl default
+    stage-packages:
+      - libgomp1
+    organize:
+      "*": (component/llama-cpp)
+  
+  llama-cpp-local-files:
+    plugin: dump
+    source: components/llama-cpp
+    organize:
+      "*": (component/llama-cpp)
+    
+  llama-cpp-cuda:
+    plugin: dump
+    source: 
+      - on amd64: https://github.com/jpm-canonical/llama.cpp-builds/releases/download/b8287/llamacpp-amd64+cuda12.tar.gz
+      - on arm64: https://github.com/jpm-canonical/llama.cpp-builds/releases/download/b8287/llamacpp-arm64+cuda12.tar.gz
+    override-build: |
+      # Move license files to be included in the snap, not the component
+      mkdir -p $CRAFT_PRIME/usr/share/doc/
+      mv licenses $CRAFT_PRIME/usr/share/doc/llama.cpp-cuda
+
+      craftctl default
+    stage-packages:
+      - libgomp1
+    organize:
+      "*": (component/llama-cpp-cuda)
+
+  llama-cpp-cuda-local-files:
+    plugin: dump
+    source: components/llama-cpp-cuda
+    organize:
+      "*": (component/llama-cpp-cuda)
+
+  notice:
+    plugin: nil
+    source: NOTICE
+    source-type: file
+    override-build: |
+      license_dir=$CRAFT_PART_INSTALL/usr/share/doc
+      mkdir -p $license_dir
+      cp NOTICE $license_dir/
+      # Add license files referenced in NOTICE
+      cp $SNAPCRAFT_PROJECT_DIR/LICENSE $license_dir/
+      cp $SNAPCRAFT_PROJECT_DIR/NVIDIA-Nemotron-Open-Model-License-12-12-25.pdf $license_dir/
+
+components:
+  model-120b-a12b-q4-k-m-gguf-01-of-20: &model
+    type: standard
+    summary: NVIDIA Nemotron 3 Super 120B A12B UD Q4_K_M GGUF
+    description: Model weights for NVIDIA Nemotron 3 Super with 120B parameters and Q4_K_M quantization in GGUF format
+  model-120b-a12b-q4-k-m-gguf-02-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-03-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-04-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-05-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-06-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-07-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-08-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-09-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-10-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-11-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-12-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-13-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-14-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-15-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-16-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-17-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-18-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-19-of-20:
+    <<: *model
+  model-120b-a12b-q4-k-m-gguf-20-of-20:
+    <<: *model
+
+  llama-cpp:
+    type: standard
+    summary: llama.cpp using default CPU instruction sets
+    description: LLM inference in C/C++
+  
+  llama-cpp-cuda:
+    type: standard
+    summary: llama.cpp with CUDA backend
+    description: LLM inference in C/C++
+
+apps:
+  nemotron-3-super:
+    command: bin/nemotron-3-super
+    completer: bin/completion.bash
+    plugs:
+      - hardware-observe
+      - opengl
+      - network
+
+  server:
+    command: bin/server.sh
+    daemon: simple
+    plugs:
+      - network-bind
+      - hardware-observe
+      - opengl
+      - home
+
