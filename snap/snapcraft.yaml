@@ -1,8 +1,7 @@
 name: nemotron-3-super
 base: core24
-summary: Inference Snap for Nemotron 3 super
-description: |
-  This is an inference snap that lets you run Nemotron 3 super.
+summary: Inference Snap for Nemotron 3 Super
+description: See https://snapcraft.io/nemotron-3-super
 
 adopt-info: version
 
@@ -38,8 +37,6 @@ parts:
   version:
     plugin: dump
     source: .
-    build-packages:
-      - git-lfs
     override-pull: |
       craftctl set version="v3+$(git -C $SNAPCRAFT_PROJECT_DIR describe --always)"
 
