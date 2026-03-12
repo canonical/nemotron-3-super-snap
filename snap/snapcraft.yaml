@@ -77,32 +77,37 @@ parts:
 
   model-120b-a12b-q4-k-m-gguf:
     plugin: nil
+    # WARNING: "source" is commented out to improve disk use, as a side effect,
+    # snapcraft will not detect changes to the source files to clear the cache and re-prime.
+    # source: components/model-120b-a12b-q4-k-m-gguf
     override-prime: |
       set +x # reduce noise
 
       # Bypassing the usual part lifecycle saves disk space and time when dealing with large files
       # Copy model files directly from the project into the respective component's prime directory
+      source_dir="$CRAFT_PROJECT_DIR/components/model-120b-a12b-q4-k-m-gguf"
       for i in {1..20}; do
         ii=$(printf "%02d" $i)
-        source="$CRAFT_PROJECT_DIR/components/model-120b-a12b-q4-k-m-gguf/NVIDIA-Nemotron-3-Super-120B-A12B-UD-Q4_K_M-5G-000${ii}-of-00020.gguf"
-        target="CRAFT_COMPONENT_MODEL_120B_A12B_Q4_K_M_GGUF_${ii}_OF_20_PRIME"
+        target_env="CRAFT_COMPONENT_MODEL_120B_A12B_Q4_K_M_GGUF_${ii}_OF_20_PRIME"
+        target_comp="${!target_env}"
 
-        cp -v "$source" "${!target}/"
+        # Copy the gguf shard to the component directory
+        cp -v "$source_dir/NVIDIA-Nemotron-3-Super-120B-A12B-UD-Q4_K_M-5G-000${ii}-of-00020.gguf" "$target_comp/"
 
         if [ "$i" -eq 1 ]; then
           # Copy any other non-gguf files from the components directory
-          for f in "$CRAFT_PROJECT_DIR/components/model-120b-a12b-q4-k-m-gguf"/*; do
+          for f in "$source_dir"/*; do
             if [ -f "$f" ]; then
               case "$f" in
                 *.gguf) ;;
-                *) cp -v "$f" "${!target}/" ;;
+                *) cp -v "$f" "$target_comp/" ;;
               esac
             fi
           done
         else
           # Each component must include a component.yaml config file.
           # For components other than the first, create an empty one:
-          echo "# No config" > "${!target}/component.yaml"
+          echo "# No config" > "$target_comp/component.yaml"
         fi
       done
 
