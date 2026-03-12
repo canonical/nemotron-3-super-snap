@@ -3,4 +3,4 @@ environment:
   # However, llama-server expects the shards to be located in the same directory. 
   # To work around it, the engine's server script creates symlinks on runtime to flatten them into a single directory.
   # The model file path is set to the first shard's symlink:
-  - MODEL_FILE=/tmp/nemotron-3-super-shards/NVIDIA-Nemotron-3-Super-120B-A12B-UD-Q4_K_M-5G-00001-of-00020.gguf
+  - MODEL_FILE=/tmp/model-120b-a12b-q4-k-m-gguf-shards/NVIDIA-Nemotron-3-Super-120B-A12B-UD-Q4_K_M-5G-00001-of-00020.gguf
