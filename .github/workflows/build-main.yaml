@@ -11,8 +11,8 @@ jobs:
       fail-fast: false
       matrix:
         runner:
-          - "self-hosted-linux-amd64-noble-2xlarge-extra"
-          - "self-hosted-linux-arm64-noble-large-extra"
+          - [ self-hosted, amd64, noble, 2xlarge-extra ]
+          - [ self-hosted, arm64, noble, large-extra ]
     with:
       runner: "${{ toJSON(matrix.runner) }}"
       init-build-script: '.github/workflows/init-build.sh'
