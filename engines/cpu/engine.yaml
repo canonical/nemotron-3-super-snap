@@ -1,0 +1,40 @@
+name: cpu
+description: Optimized for a range of CPU micro-architectures
+vendor: Canonical Ltd
+grade: stable
+devices:
+  anyof:
+    - type: cpu
+      architecture: amd64
+    - type: cpu
+      architecture: arm64
+
+memory: 50G
+
+# The usage will be higher if considering snapd snapshots.
+disk-space: 78G
+
+components:
+  - llama-cpp
+  - model-120b-a12b-q4-k-m-gguf-01-of-20
+  - model-120b-a12b-q4-k-m-gguf-02-of-20
+  - model-120b-a12b-q4-k-m-gguf-03-of-20
+  - model-120b-a12b-q4-k-m-gguf-04-of-20
+  - model-120b-a12b-q4-k-m-gguf-05-of-20
+  - model-120b-a12b-q4-k-m-gguf-06-of-20
+  - model-120b-a12b-q4-k-m-gguf-07-of-20
+  - model-120b-a12b-q4-k-m-gguf-08-of-20
+  - model-120b-a12b-q4-k-m-gguf-09-of-20
+  - model-120b-a12b-q4-k-m-gguf-10-of-20
+  - model-120b-a12b-q4-k-m-gguf-11-of-20
+  - model-120b-a12b-q4-k-m-gguf-12-of-20
+  - model-120b-a12b-q4-k-m-gguf-13-of-20
+  - model-120b-a12b-q4-k-m-gguf-14-of-20
+  - model-120b-a12b-q4-k-m-gguf-15-of-20
+  - model-120b-a12b-q4-k-m-gguf-16-of-20
+  - model-120b-a12b-q4-k-m-gguf-17-of-20
+  - model-120b-a12b-q4-k-m-gguf-18-of-20
+  - model-120b-a12b-q4-k-m-gguf-19-of-20
+  - model-120b-a12b-q4-k-m-gguf-20-of-20
+configurations:
+  sleep-idle-seconds: 600

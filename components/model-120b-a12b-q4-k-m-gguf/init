@@ -1,15 +1,16 @@
 #!/bin/bash -eu
 
-# Create symbolic links to model shreds to be found in components subdirectory in /tmp/nemotron-3-nano-shards folder.
-# Create them only if they do not exist, perform a check before creating them.
-SHARD_DIR="/tmp/nemotron-3-super-shards"
-[ -d "$SHARD_DIR" ] && rm -r "$SHARD_DIR"
-mkdir -p "$SHARD_DIR"
+# Create flattened symbolic links in a temp directory to model shards in component directories
 
-for i in {1..6}; do
-    SHARD_NUM=$(printf "%05d" $i)
-    SHARD_FILE="NVIDIA-Nemotron-3-Super-120B-A12B-UD-Q4_K_M-5G-${SHARD_NUM}-of-00020.gguf"
-    TARGET_PATH="$SHARD_DIR/$SHARD_FILE"
-    SOURCE_PATH="$SNAP_COMPONENTS/model-120b-a12b-q4-k-m-gguf-${i}-of-6/$SHARD_FILE"
-    ln -s "$SOURCE_PATH" "$TARGET_PATH"
+temp_shard_dir="/tmp/model-120b-a12b-q4-k-m-gguf-shards"
+[ -d "$temp_shard_dir" ] && rm -r "$temp_shard_dir"
+mkdir -p "$temp_shard_dir"
+
+for i in {1..20}; do
+    ii=$(printf "%02d" $i)
+    shard_file="NVIDIA-Nemotron-3-Super-120B-A12B-UD-Q4_K_M-5G-000${ii}-of-00020.gguf"
+    target_path="$temp_shard_dir/$shard_file"
+    source_path="$SNAP_COMPONENTS/model-120b-a12b-q4-k-m-gguf-${ii}-of-20/$shard_file"
+    
+    ln -s "$source_path" "$target_path"
 done
