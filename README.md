@@ -15,7 +15,7 @@ This snap installs a hardware-optimized engine for inference with the [Nemotron 
 
 Clone this repo with its submodules:
 ```shell
-git clone https://github.com/canonical/nemotron-3-super-snap
+git clone --recurse-submodules https://github.com/canonical/nemotron-3-super-snap
 ```
 
 Prepare the required models by following the instructions for each model, under the [components](./components) directory. 
